@@ -1,0 +1,2 @@
+[console_scripts]
+pocketflow-tracing-setup = pocketflow_tracing.utils.setup:main

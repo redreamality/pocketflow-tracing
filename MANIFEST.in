@@ -1,0 +1,19 @@
+# Include the README and license files
+include README.md
+include LICENSE
+include .env.example
+
+# Include package data
+include pocketflow_tracing/py.typed
+
+# Include examples and tests for reference
+recursive-include examples *.py
+include test_tracing.py
+
+# Exclude development files
+exclude .env
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * .DS_Store
+recursive-exclude * .git*
+exclude requirements.txt

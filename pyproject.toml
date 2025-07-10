@@ -1,0 +1,157 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pocketflow-tracing"
+version = "0.1.2"
+description = "Observability and tracing for PocketFlow workflows using Langfuse"
+readme = "README.md"
+license = "MIT"
+authors = [
+    {name = "Remy", email = "redreamality@gmail.com"}
+]
+maintainers = [
+    {name = "Remy", email = "redreamality@gmail.com"}
+]
+keywords = [
+    "pocketflow",
+    "tracing",
+    "observability",
+    "langfuse",
+    "workflow",
+    "monitoring",
+    "llm",
+    "ai"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Monitoring",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+requires-python = ">=3.8"
+dependencies = [
+    "langfuse>=2.0.0,<3.0.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0"
+]
+test = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0"
+]
+
+[project.urls]
+Homepage = "https://redreamality.com/blog/pocketflow-tracing"
+Repository = "https://github.com/redreamality/PocketFlow/tree/main/cookbook/pocketflow-tracing"
+Documentation = "https://redreamality.com/blog/pocketflow-tracing"
+"Bug Tracker" = "https://github.com/redreamality/PocketFlow/issues"
+
+[project.scripts]
+pocketflow-tracing-setup = "pocketflow_tracing.utils.setup:main"
+
+[tool.setuptools]
+packages = ["pocketflow_tracing", "pocketflow_tracing.utils"]
+
+[tool.setuptools.package-data]
+pocketflow_tracing = ["py.typed"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["pocketflow_tracing"]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "langfuse.*",
+    "dotenv.*"
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose"
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests"
+]
+
+[tool.coverage.run]
+source = ["pocketflow_tracing"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:"
+]
