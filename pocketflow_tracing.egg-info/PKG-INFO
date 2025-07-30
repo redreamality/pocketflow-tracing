@@ -22,12 +22,13 @@ Classifier: Programming Language :: Python :: 3.12
 Classifier: Topic :: Software Development :: Libraries :: Python Modules
 Classifier: Topic :: System :: Monitoring
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
-Requires-Python: >=3.8
+Requires-Python: >=3.11
 Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: langfuse<3.0.0,>=2.0.0
 Requires-Dist: python-dotenv>=1.0.0
 Requires-Dist: pydantic>=2.0.0
+Requires-Dist: pocketflow>=0.0.2
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0.0; extra == "dev"
 Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
@@ -43,17 +44,26 @@ Dynamic: license-file
 
 # PocketFlow Tracing with Langfuse
 
-This cookbook provides comprehensive observability for PocketFlow workflows using [Langfuse](https://langfuse.com/) as the tracing backend. With minimal code changes (just adding a decorator), you can automatically trace all node executions, inputs, outputs, and errors in your PocketFlow workflows.
+This [repository](https://github.com/redreamality/pocketflow-tracing) provides comprehensive observability for PocketFlow workflows using [Langfuse](https://langfuse.com/) as the tracing backend. With minimal code changes (just adding a decorator), you can automatically trace all node executions, inputs, outputs, and errors in your PocketFlow workflows. Checkout the [blog](https://redreamality.com/blog/pocketflow-tracing) post for more details.
 
 ## 🎯 Features
 
+### Core Tracing
 - **Automatic Tracing**: Trace entire flows with a single decorator
 - **Node-Level Observability**: Automatically trace `prep`, `exec`, and `post` phases of each node
 - **Input/Output Tracking**: Capture all data flowing through your workflow
 - **Error Tracking**: Automatically capture and trace exceptions
-- **Async Support**: Full support for AsyncFlow and AsyncNode
 - **Minimal Code Changes**: Just add `@trace_flow()` to your flow classes
 - **Langfuse Integration**: Leverage Langfuse's powerful observability platform
+
+### 🚀 Advanced Async Support
+- **Comprehensive Async Context Management**: Proper context propagation across async boundaries
+- **Advanced Lifecycle Tracking**: Detailed tracking of async node states including suspend/resume events
+- **Async Flow Composition**: Support for nested, concurrent, and batch async flows
+- **Robust Error Handling**: Comprehensive error management for async operations including cancellation, timeouts, and recovery
+- **Performance Monitoring**: Built-in performance tracking for async operations
+- **Concurrent Flow Execution**: Execute multiple flows concurrently with proper isolation
+- **Backward Compatibility**: Existing synchronous code continues to work unchanged
 
 ## 🚀 Quick Start
 
@@ -210,12 +220,75 @@ python basic_example.py
 ```
 
 ### Asynchronous Flow
-See `examples/async_example.py` for tracing AsyncFlow and AsyncNode.
+See `examples/async_example.py` for basic async tracing and `examples/comprehensive_async_example.py` for advanced async features.
 
 ```bash
-cd examples  
+cd examples
 python async_example.py
+
+# For comprehensive async features demonstration
+python comprehensive_async_example.py
 ```
+
+### 🚀 Advanced Async Usage
+
+The enhanced async support provides comprehensive tracing for complex async patterns:
+
+#### Concurrent Flow Execution
+```python
+import asyncio
+from pocketflow_tracing import trace_flow
+
+@trace_flow(flow_name="ConcurrentFlow")
+class ConcurrentFlow(AsyncFlow):
+    # ... your async flow definition ...
+
+async def run_concurrent_flows():
+    flows = [ConcurrentFlow() for _ in range(5)]
+    shared_data = [{"input": f"data_{i}"} for i in range(5)]
+
+    # Execute flows concurrently with proper tracing
+    results = await asyncio.gather(*[
+        flow.run_async(shared)
+        for flow, shared in zip(flows, shared_data)
+    ])
+
+    return results
+```
+
+#### Error Handling and Recovery
+```python
+class RobustAsyncNode(AsyncNode):
+    def __init__(self, max_retries=3):
+        super().__init__(max_retries=max_retries, wait=1.0)
+
+    async def exec_async(self, prep_res):
+        # This will automatically retry on failure
+        return await risky_async_operation(prep_res)
+
+    async def exec_fallback_async(self, prep_res, exc):
+        # Fallback when all retries are exhausted
+        return await safe_fallback_operation(prep_res)
+```
+
+#### Nested Flow Composition
+```python
+@trace_flow(flow_name="MainFlow")
+class MainFlow(AsyncFlow):
+    async def run_async(self, shared):
+        # Run main processing
+        result = await super().run_async(shared)
+
+        # Run nested analysis flow with proper context
+        if result == "success":
+            analysis_flow = AnalysisFlow()
+            analysis_result = await analysis_flow.run_async(shared)
+            shared["analysis"] = analysis_result
+
+        return result
+```
+
+For complete migration guidance, see [docs/async_migration_guide.md](docs/async_migration_guide.md).
 
 ## 🔍 Viewing Traces
 

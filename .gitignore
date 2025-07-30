@@ -5,7 +5,7 @@
 # Distribution / packaging
 dist/
 build/
-*.egg-info*.egg
+*.egg-info/*
 # Virtual environmentsvenv/
 env/
 
@@ -28,3 +28,5 @@ env/
 
 
 
+pocketflow_tracing.egg-info/PKG-INFO
+pocketflow_tracing.egg-info/PKG-INFO

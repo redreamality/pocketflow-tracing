@@ -6,7 +6,17 @@ pyproject.toml
 test_tracing.py
 examples/async_example.py
 examples/basic_example.py
+examples/comprehensive_async_example/flow.py
+examples/comprehensive_async_example/main.py
+examples/comprehensive_async_example/nodes.py
+examples/comprehensive_async_example/utils/__init__.py
+examples/comprehensive_async_example/utils/async_data_fetch.py
+examples/comprehensive_async_example/utils/async_data_process.py
+examples/comprehensive_async_example/utils/concurrent_utils.py
 pocketflow_tracing/__init__.py
+pocketflow_tracing/async_composition.py
+pocketflow_tracing/async_error_handling.py
+pocketflow_tracing/async_lifecycle.py
 pocketflow_tracing/config.py
 pocketflow_tracing/core.py
 pocketflow_tracing/decorator.py
@@ -19,3 +29,6 @@ pocketflow_tracing.egg-info/requires.txt
 pocketflow_tracing.egg-info/top_level.txt
 pocketflow_tracing/utils/__init__.py
 pocketflow_tracing/utils/setup.py
+tests/test_async_comprehensive.py
+tests/test_async_integration.py
+tests/test_async_performance_compatibility.py

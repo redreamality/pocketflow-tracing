@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+        "ms-python.python",
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "ms-python.pylint",
+        "ms-python.vscode-pylance",
+        "tamasfe.even-better-toml",
+        "eamodio.gitlens",
+        "cweijan.vscode-database-client2"
+    ],
+    "unwantedRecommendations": [
+    ]
+}

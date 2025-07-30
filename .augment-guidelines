@@ -1,0 +1,2 @@
+Always document the changes made into `docs/CHANGELOG/{YYYYDDMM}-{CHANGE_DESCRIPTION}.md`.
+Always use `uv add <package>` to install dependencies and `uv run <file.py>` to run code.
