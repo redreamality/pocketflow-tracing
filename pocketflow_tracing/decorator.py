@@ -101,8 +101,9 @@ def _trace_flow_class(flow_class, config, flow_name, session_id, user_id):
         self._flow_name = flow_name
         self._trace_id = None
 
-        # Patch all nodes in the flow
-        self._patch_nodes()
+        # Don't patch nodes immediately - wait until flow is actually run
+        # This allows the flow to be properly initialized with nodes first
+        self._nodes_patched = False
 
     def traced_run(self, shared):
         """Traced version of the run method."""
@@ -137,6 +138,11 @@ def _trace_flow_class(flow_class, config, flow_name, session_id, user_id):
             return (
                 await original_run_async(self, shared) if original_run_async else None
             )
+
+        # Patch nodes if not already done (lazy patching)
+        if not self._nodes_patched:
+            self._patch_nodes()
+            self._nodes_patched = True
 
         # Start async trace with context management
         async_context = await self._tracer.start_trace_async(self._flow_name, shared)

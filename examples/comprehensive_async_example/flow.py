@@ -22,11 +22,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 from pocketflow import AsyncFlow
 from pocketflow_tracing import trace_flow
 from nodes import (
-    AsyncDataFetchNode, 
-    AsyncDataProcessNode, 
+    AsyncDataFetchNode,
+    AsyncDataProcessNode,
     AsyncFallbackProcessNode,
     AsyncConcurrentProcessNode,
-    AsyncPerformanceMonitorNode
+    AsyncPerformanceMonitorNode,
+    AsyncConcurrentExecutionNode
 )
 
 
@@ -114,13 +115,14 @@ class PerformanceMonitoringFlow(AsyncFlow):
 def create_comprehensive_async_flow():
     """
     Create and return a comprehensive async flow with conditional routing.
-    
+
     This flow demonstrates:
     - Data fetching with error handling
     - Conditional routing based on results
     - Fallback processing
+    - Concurrent execution within the main flow
     - Advanced async patterns
-    
+
     Returns:
         ComprehensiveAsyncFlow: Configured flow instance
     """
@@ -128,11 +130,16 @@ def create_comprehensive_async_flow():
     fetch_node = AsyncDataFetchNode(max_retries=2, timeout=3.0)
     process_node = AsyncDataProcessNode()
     fallback_node = AsyncFallbackProcessNode()
+    concurrent_node = AsyncConcurrentExecutionNode()
 
     # Connect nodes with conditional routing
     fetch_node - "full_process" >> process_node
     fetch_node - "simple_process" >> process_node
     fetch_node - "fallback_process" >> fallback_node
+
+    # Add concurrent execution after processing
+    process_node - "concurrent_complete" >> concurrent_node
+    fallback_node - "concurrent_complete" >> concurrent_node
 
     # Create and return flow
     flow = ComprehensiveAsyncFlow()

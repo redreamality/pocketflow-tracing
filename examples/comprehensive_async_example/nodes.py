@@ -24,6 +24,7 @@ from pocketflow import AsyncNode
 from utils.async_data_fetch import fetch_data_from_api, get_fallback_data, validate_query_params
 from utils.async_data_process import validate_processing_data, process_data_with_strategy
 from utils.async_data_process import handle_fallback_processing
+from typing import Dict, Any, List, Tuple
 
 
 class AsyncDataFetchNode(AsyncNode):
@@ -101,7 +102,7 @@ class AsyncDataProcessNode(AsyncNode):
     async def post_async(self, shared, prep_res, exec_res):
         """Store the processed data."""
         shared["processed_data"] = exec_res
-        return "default"
+        return "concurrent_complete"
 
 
 class AsyncFallbackProcessNode(AsyncNode):
@@ -126,7 +127,7 @@ class AsyncFallbackProcessNode(AsyncNode):
     async def post_async(self, shared, prep_res, exec_res):
         """Store fallback results."""
         shared["fallback_result"] = exec_res
-        return "default"
+        return "concurrent_complete"
 
 
 # Additional specialized nodes for advanced demonstrations
@@ -264,3 +265,112 @@ if __name__ == "__main__":
                 print(f"❌ Process node test failed: {e}")
     
     asyncio.run(test_nodes())
+
+
+class AsyncConcurrentExecutionNode(AsyncNode):
+    """
+    Node that executes multiple flows concurrently within the main trace.
+
+    This node demonstrates concurrent execution while maintaining proper
+    trace hierarchy and error handling.
+    """
+
+    async def prep_async(self, shared):
+        """Prepare concurrent execution parameters."""
+        # Import here to avoid circular imports
+        from flow import create_concurrent_data_flow
+
+        # Define queries for concurrent execution
+        queries = [
+            "python async programming",
+            "machine learning basics",
+            "data science tools",
+            "fail_test",  # This will trigger fallback
+            "web development"
+        ]
+
+        # Create flows and data for concurrent execution
+        flows_and_data = []
+        for i, query in enumerate(queries):
+            flow = create_concurrent_data_flow()
+            shared_data = {
+                "query": query,
+                "source": "concurrent_api",
+                "flow_id": f"concurrent_{i}"
+            }
+            flows_and_data.append((flow, shared_data))
+
+        # Store flows_and_data in instance variable to avoid serialization issues
+        self._flows_and_data = flows_and_data
+
+        # Return only serializable data for tracing
+        return {
+            "queries": queries,
+            "total_flows": len(flows_and_data),
+            "execution_start_time": asyncio.get_event_loop().time()
+        }
+
+    async def exec_async(self, prep_res):
+        """Execute multiple flows concurrently."""
+        flows_and_data = self._flows_and_data
+
+        print(f"🚀 Starting {len(flows_and_data)} concurrent flows...")
+        start_time = asyncio.get_event_loop().time()
+
+        # Execute all flows concurrently
+        results = await asyncio.gather(*[
+            flow.run_async(shared_data)
+            for flow, shared_data in flows_and_data
+        ], return_exceptions=True)
+
+        execution_time = asyncio.get_event_loop().time() - start_time
+
+        # Analyze results
+        successful = sum(1 for r in results if not isinstance(r, Exception))
+        failed = len(results) - successful
+
+        print(f"⏱️ All flows completed in {execution_time:.2f} seconds")
+        print(f"✅ Successful flows: {successful}")
+        print(f"❌ Failed flows: {failed}")
+
+        # Store results in instance variable to avoid serialization issues
+        self._execution_results = results
+
+        # Return only serializable data for tracing
+        return {
+            "execution_time": execution_time,
+            "statistics": {
+                "total": len(results),
+                "successful": successful,
+                "failed": failed
+            },
+            "result_summary": [
+                "success" if not isinstance(r, Exception) else f"error: {type(r).__name__}"
+                for r in results
+            ]
+        }
+
+    async def post_async(self, shared, prep_res, exec_res):
+        """Process concurrent execution results."""
+        statistics = exec_res["statistics"]
+        execution_time = exec_res["execution_time"]
+
+        # Store results in shared context using instance variable
+        shared["concurrent_results"] = self._execution_results
+        shared["concurrent_statistics"] = statistics
+        shared["concurrent_execution_time"] = execution_time
+
+        # Determine success status
+        success_rate = statistics["successful"] / statistics["total"]
+
+        if success_rate >= 0.8:  # 80% success rate threshold
+            shared["concurrent_status"] = "success"
+            print(f"🎉 Concurrent execution successful: {success_rate:.1%} success rate")
+        elif success_rate >= 0.5:  # 50% success rate threshold
+            shared["concurrent_status"] = "partial_success"
+            print(f"⚠️ Concurrent execution partially successful: {success_rate:.1%} success rate")
+        else:
+            shared["concurrent_status"] = "failed"
+            print(f"❌ Concurrent execution failed: {success_rate:.1%} success rate")
+
+        return "concurrent_complete"
