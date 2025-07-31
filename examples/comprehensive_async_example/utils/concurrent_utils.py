@@ -79,39 +79,105 @@ async def execute_flows_concurrently(
     flows_and_data: List[Tuple[Any, Dict[str, Any]]]
 ) -> Tuple[List[Any], float, Dict[str, int]]:
     """
-    Execute multiple flows concurrently and collect results.
-    
+    Execute multiple flows concurrently under a single trace.
+
     Args:
         flows_and_data: List of (flow, shared_data) tuples
-        
+
     Returns:
         Tuple of (results, execution_time, statistics)
     """
+    import os
+    from pocketflow_tracing import TracingConfig, LangfuseTracer
+
     print(f"🚀 Starting {len(flows_and_data)} concurrent flows...")
+
+    # Create a main tracer for concurrent execution using environment variables
+    config = TracingConfig(
+        langfuse_public_key=os.getenv("LANGFUSE_PUBLIC_KEY", "sk-lf-your-public-key"),
+        langfuse_secret_key=os.getenv("LANGFUSE_SECRET_KEY", "sk-lf-your-secret-key"),
+        langfuse_host=os.getenv("LANGFUSE_HOST", "http://192.168.1.216:3000"),
+        debug=True
+    )
+
+    tracer = LangfuseTracer(config)
+
+    # Create main trace for concurrent execution
+    main_shared = {
+        "demonstration": "concurrent_flows",
+        "total_flows": len(flows_and_data),
+        "queries": [shared.get("query", "unknown") for _, shared in flows_and_data]
+    }
+
+    # Start main trace context
+    async_context = await tracer.start_trace_async("ConcurrentFlowsExecution", main_shared)
+
+    if not async_context:
+        # Fallback to original behavior if tracing fails
+        return await execute_flows_concurrently_fallback(flows_and_data)
+
+    async with async_context:
+        start_time = asyncio.get_event_loop().time()
+
+        # Execute all flows concurrently within the trace context
+        results = await asyncio.gather(*[
+            flow.run_async(shared)
+            for flow, shared in flows_and_data
+        ], return_exceptions=True)
+
+        execution_time = asyncio.get_event_loop().time() - start_time
+
+        # Analyze results
+        successful = sum(1 for r in results if not isinstance(r, Exception))
+        failed = len(results) - successful
+
+        statistics = {
+            "total": len(results),
+            "successful": successful,
+            "failed": failed
+        }
+
+        print(f"⏱️ All flows completed in {execution_time:.2f} seconds")
+        print(f"✅ Successful flows: {successful}")
+        print(f"❌ Failed flows: {failed}")
+
+        # Update main trace with results
+        tracer.end_trace(main_shared, "success" if failed == 0 else "partial_success")
+
+        return results, execution_time, statistics
+
+
+async def execute_flows_concurrently_fallback(
+    flows_and_data: List[Tuple[Any, Dict[str, Any]]]
+) -> Tuple[List[Any], float, Dict[str, int]]:
+    """
+    Fallback concurrent execution without tracing.
+    """
+    print(f"⚠️ Falling back to execution without main trace")
     start_time = asyncio.get_event_loop().time()
-    
+
     # Execute all flows concurrently
     results = await asyncio.gather(*[
-        flow.run_async(shared) 
+        flow.run_async(shared)
         for flow, shared in flows_and_data
     ], return_exceptions=True)
-    
+
     execution_time = asyncio.get_event_loop().time() - start_time
-    
+
     # Analyze results
     successful = sum(1 for r in results if not isinstance(r, Exception))
     failed = len(results) - successful
-    
+
     statistics = {
         "total": len(results),
         "successful": successful,
         "failed": failed
     }
-    
+
     print(f"⏱️ All flows completed in {execution_time:.2f} seconds")
     print(f"✅ Successful flows: {successful}")
     print(f"❌ Failed flows: {failed}")
-    
+
     return results, execution_time, statistics
 
 

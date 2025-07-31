@@ -16,10 +16,25 @@ Demonstrations included:
 import asyncio
 import sys
 import os
+import logging
+from datetime import datetime
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+# Setup logging to file
+log_filename = f"pocketflow_tracing_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_filename),
+        logging.StreamHandler(sys.stdout)  # Also keep console output for main messages
+    ]
+)
+
+print(f"📝 Logging to file: {log_filename}")
 
 # Add parent directories to path to import pocketflow
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
@@ -34,9 +49,9 @@ from utils.concurrent_utils import execute_flows_concurrently, analyze_concurren
 
 
 async def demonstrate_basic_async_flow():
-    """Demonstrate basic async flow with tracing."""
+    """Demonstrate comprehensive async flow with integrated concurrent execution."""
     print("\n" + "="*60)
-    print("🎯 BASIC ASYNC FLOW DEMONSTRATION")
+    print("🎯 COMPREHENSIVE ASYNC FLOW WITH CONCURRENT EXECUTION")
     print("="*60)
 
     flow = create_comprehensive_async_flow()
@@ -70,7 +85,7 @@ async def demonstrate_concurrent_flows():
     # Create multiple flows with different queries
     queries = [
         "python async programming",
-        "machine learning basics", 
+        "machine learning basics",
         "data science tools",
         "fail_test",  # This will trigger fallback
         "web development"
@@ -89,7 +104,7 @@ async def demonstrate_concurrent_flows():
     try:
         # Execute flows concurrently and analyze results
         results, execution_time, statistics = await execute_flows_concurrently(flows_and_data)
-        
+
         # Extract shared data for analysis
         shared_data_list = [shared for _, shared in flows_and_data]
         analyze_concurrent_results(results, shared_data_list)
@@ -248,18 +263,19 @@ async def main():
     """Run all async demonstrations."""
     print("🚀 COMPREHENSIVE ASYNC TRACING DEMONSTRATION")
     print("=" * 80)
-    
+
     try:
-        # Run all demonstrations
+        # Run comprehensive demonstration with integrated concurrent execution
         await demonstrate_basic_async_flow()
-        await demonstrate_concurrent_flows()
-        await demonstrate_error_handling()
-        await demonstrate_performance_monitoring()
-        await demonstrate_nested_flows()
-        
+
+        # Uncomment these for additional demos
+        # await demonstrate_error_handling()
+        # await demonstrate_performance_monitoring()
+        # await demonstrate_nested_flows()
+
         # Display final summary
         display_final_summary()
-        
+
     except Exception as e:
         print(f"❌ Demonstration failed: {e}")
         raise

@@ -167,10 +167,6 @@ class LangfuseTracer:
                     kwargs["debug"] = True
 
                 self.client = Langfuse(**kwargs)
-                if config.debug:
-                    print(
-                        f"✓ Langfuse client initialized with host: {config.langfuse_host}"
-                    )
             except Exception as e:
                 if config.debug:
                     print(f"✗ Failed to initialize Langfuse client: {e}")
@@ -181,7 +177,7 @@ class LangfuseTracer:
 
     def start_trace(self, flow_name: str, input_data: Dict[str, Any]) -> Optional[str]:
         """
-        Start a new trace for a flow execution.
+        Start a new trace for a flow execution, or create a span if already in a trace context.
 
         Args:
             flow_name: Name of the flow being traced.
@@ -194,7 +190,28 @@ class LangfuseTracer:
             return None
 
         try:
-            # Serialize input data safely
+            # Check if we're already in a trace context
+            current_context = AsyncTraceContext.get_current_context()
+            if current_context and current_context.tracer.current_trace:
+                # We're in an existing trace context, create a span instead of a new trace
+                # Create a span for this flow within the existing trace
+                span = current_context.tracer.current_trace.span(
+                    name=flow_name,
+                    input=self._serialize_data(input_data),
+                    metadata={
+                        "framework": "PocketFlow",
+                        "trace_type": "sub_flow_execution",
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
+
+                # Store this span as our "current trace" for child spans
+                self.current_trace = span
+                trace_id = span.id
+
+                return trace_id
+
+            # No existing trace context, create a new trace
             serialized_input = self._serialize_data(input_data)
 
             # Use Langfuse v2 API to create a trace
@@ -212,9 +229,6 @@ class LangfuseTracer:
 
             # Get the trace ID
             trace_id = self.current_trace.id
-
-            if self.config.debug:
-                print(f"✓ Started trace: {trace_id} for flow: {flow_name}")
 
             return trace_id
 

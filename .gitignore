@@ -8,6 +8,7 @@ build/
 *.egg-info/*
 # Virtual environmentsvenv/
 env/
+.env
 
 .venv/
 # IDE specific files.idea/
