@@ -207,7 +207,7 @@ def _trace_flow_class(flow_class, config, flow_name, session_id, user_id):
             self._tracer.flush()
 
     def patch_nodes(self):
-        """Patch all nodes in the flow to add tracing."""
+        """Patch all nodes in the flow to add tracing, including nested flows."""
         if not hasattr(self, "start_node") or not self.start_node:
             return
 
@@ -229,6 +229,14 @@ def _trace_flow_class(flow_class, config, flow_name, session_id, user_id):
                 for successor in node.successors.values():
                     if successor and id(successor) not in visited:
                         nodes_to_patch.append(successor)
+
+            # Handle nested flows: if this node is also a flow, patch its internal nodes
+            if (
+                hasattr(node, "start_node")
+                and node.start_node
+                and id(node.start_node) not in visited
+            ):
+                nodes_to_patch.append(node.start_node)
 
     def patch_node(self, node):
         """Patch a single node to add tracing."""

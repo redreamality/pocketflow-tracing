@@ -66,11 +66,50 @@ POCKETFLOW_TRACING_DEBUG=true
 
 ### 3. Basic Usage
 
+For a flow you want to trace, say:
+
+```python
+# flow.py
+
+node1 = MyNode1()
+node2 = MyNode2()
+
+node1 >> node2
+
+flow = Flow(node1)
+```
+
+
+The only thing you need to do is add the `@trace_flow()` decorator to your flow classes:
+
+```python
+# flow.py
+
+node1 = MyNode1()
+node2 = MyNode2()
+
+node1 >> node2
+
+@trace_flow()  # 🎉 That's it! Your flow is now traced
+class MyFlow(Flow):
+    pass
+
+# Run your flow - tracing happens automatically
+flow = MyFlow(node1)
+```
+
+We recommend to use an semantic name for your flow, e.g. `MyFlow` here.
+
+---
+
+Full code for the tracing example:
+
 ```python
 from pocketflow import Node, Flow
 from pocketflow_tracing import trace_flow
 
-class MyNode(Node):
+# nodes.py
+class MyNode1(Node):
     def prep(self, shared):
         return shared["input"]
     
@@ -81,16 +120,35 @@ class MyNode(Node):
         shared["output"] = exec_res
         return "default"
 
+class MyNode2(Node):
+    def prep(self, shared):
+        return shared["input"]
+    
+    def exec(self, data):
+        return f"Processed: {data}"
+    
+    def post(self, shared, prep_res, exec_res):
+        shared["output"] = exec_res
+        return "default"
+
+
+# flow.py
+
+node1 = MyNode1()
+node2 = MyNode2()
+
+node1 >> node2
+
 @trace_flow()  # 🎉 That's it! Your flow is now traced
 class MyFlow(Flow):
-    def __init__(self):
-        super().__init__(start=MyNode())
+    pass
 
 # Run your flow - tracing happens automatically
-flow = MyFlow()
+flow = MyFlow(node1)
 shared = {"input": "Hello World"}
 flow.run(shared)
 ```
+
 
 ## 📊 What Gets Traced
 
