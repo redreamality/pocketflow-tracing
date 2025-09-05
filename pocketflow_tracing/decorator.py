@@ -426,6 +426,7 @@ def _trace_flow_class(flow_class, config, flow_name, session_id, user_id):
     flow_class._create_traced_method = create_traced_method
     flow_class._create_traced_async_method = create_traced_async_method
     flow_class._execute_with_lifecycle_tracking = execute_with_lifecycle_tracking
+    flow_class._traced_run_async_fallback = _traced_run_async_fallback
 
     if original_run:
         flow_class.run = traced_run
